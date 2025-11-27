@@ -168,7 +168,7 @@ async function getAddress(lat, lon) {
   try {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     const url = `https://maps.googleapis.com/maps/api/geocode/json`;
-
+    console.log({lat, lon})
     const response = await axios.get(url, {
       params: {
         latlng: `${lat},${lon}`,
