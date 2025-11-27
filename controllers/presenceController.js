@@ -188,6 +188,7 @@ async function getAddress(lat, lon) {
     // Buscar cidade, estado e país nos componentes do endereço
     let cidade, estado, pais;
     result.address_components.forEach((component) => {
+      console.log(component)
       if (component.types.includes("locality")) cidade = component.long_name;
       if (component.types.includes("administrative_area_level_1")) estado = component.long_name;
       if (component.types.includes("country")) pais = component.long_name;
