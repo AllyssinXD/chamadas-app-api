@@ -165,28 +165,43 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 async function getAddress(lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse`;
+  try {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json`;
 
-  const response = await axios.get(url, {
-    params: {
-      lat,
-      lon,
-      format: "json"
-    },
-    headers: {
-      "User-Agent": "ChamadasApp/1.0" // Nominatim exige isso
+    const response = await axios.get(url, {
+      params: {
+        latlng: `${lat},${lon}`,
+        key: apiKey,
+        language: "pt-BR", // opcional
+      },
+    });
+
+    const data = response.data;
+
+    if (data.status !== "OK" || !data.results.length) {
+      return { error: "Localização inválida" };
     }
-  });
 
-  const data = response.data;
-if (data.error) return {error: data.error}
+    const result = data.results[0];
 
-  return {
-    cidade: data.address.city || data.address.town || data.address.village,
-    estado: data.address.state,
-    pais: data.address.country,
-    enderecoCompleto: data.display_name
-  };
+    // Buscar cidade, estado e país nos componentes do endereço
+    let cidade, estado, pais;
+    result.address_components.forEach((component) => {
+      if (component.types.includes("locality")) cidade = component.long_name;
+      if (component.types.includes("administrative_area_level_1")) estado = component.long_name;
+      if (component.types.includes("country")) pais = component.long_name;
+    });
+
+    return {
+      cidade: cidade || null,
+      estado: estado || null,
+      pais: pais || null,
+      enderecoCompleto: result.formatted_address,
+    };
+  } catch (err) {
+    return { error: err.message };
+  }
 }
 
 const getAllPresencesFromChamada = async (req, res) => {
