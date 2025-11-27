@@ -7,6 +7,7 @@ import chamadaCustomInputModel from "../models/chamadaCustomInputModel.js";
 
 const confirmPresence = async (req, res) => {
   const { nome, lag, long } = req.body;
+  const uuid = req.headers["user-agent"];
   const forwarded = req.headers["x-forwarded-for"];
   const ip = forwarded ? forwarded.split(",")[0].trim() : req.body.ip;
   const { chamadaId } = req.params;
@@ -15,7 +16,7 @@ const confirmPresence = async (req, res) => {
   console.log("Iniciando confirmação de presença...");
   console.log("Dados recebidos:", { nome, lag, long, ip, chamadaId, customInputs });
 
-  if (!nome || !lag || !long || !ip || !chamadaId) {
+  if (!nome || !lag || !long || !ip || !chamadaId || !uuid) {
     console.log("Erro: Campos obrigatórios estão vazios.");
     return res.status(400).json({ success: false, message: "Campos não podem ser vazios" });
   }
@@ -104,7 +105,7 @@ const confirmPresence = async (req, res) => {
     }
 
     console.log("Verificando se o IP já foi usado...");
-    const exists = await presenceModel.find({ id_chamada: chamadaId, ip });
+    const exists = await presenceModel.find({ id_chamada: chamadaId, ip, uuid });
     console.log("Presenças existentes para este IP:", exists);
 
     if (exists.length > 0) {
@@ -122,6 +123,7 @@ const confirmPresence = async (req, res) => {
       lag,
       envio: dataAgora,
       ip,
+      uuid,
       id_chamada: chamadaId,
     });
     console.log("Nova presença criada:", newPresence);
