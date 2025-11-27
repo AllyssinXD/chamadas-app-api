@@ -4,6 +4,57 @@ import axios from "axios"
 import mongoose from "mongoose";
 import chamadaInputValueModel from "../models/chamadaInputValueModel.js";
 import chamadaCustomInputModel from "../models/chamadaCustomInputModel.js";
+import ExcelJS from "exceljs"
+
+const exportChamada = async (req, res) => {
+  const { chamadaId } = req.params;
+
+  try {
+    // Buscar dados do banco
+    const presences = await presenceModel.find({ id_chamada: chamadaId });
+
+    // Criar workbook e worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Presenças");
+
+    // Cabeçalho
+    worksheet.columns = [
+      { header: "Nome", key: "nome", width: 30 },
+      { header: "Latitude", key: "lag", width: 15 },
+      { header: "Longitude", key: "long", width: 15 },
+      { header: "IP", key: "ip", width: 20 },
+      { header: "Data de Envio", key: "envio", width: 25 },
+    ];
+
+    // Adicionar linhas
+    presences.forEach((p) => {
+      worksheet.addRow({
+        nome: p.nome,
+        lag: p.lag,
+        long: p.long,
+        ip: p.ip,
+        envio: p.envio.toISOString(), // converter para string legível
+      });
+    });
+
+    // Configurar resposta para download
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=presencas-${chamadaId}.xlsx`
+    );
+
+    // Escrever e enviar o arquivo
+    await workbook.xlsx.write(res);
+    res.status(200).end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Erro ao gerar Excel" });
+  }
+}
 
 const confirmPresence = async (req, res) => {
   const { nome, lag, long } = req.body;
@@ -259,4 +310,4 @@ const getAllPresencesFromChamada = async (req, res) => {
   }
 };
 
-export { confirmPresence, getAllPresencesFromChamada };
+export { confirmPresence, getAllPresencesFromChamada, exportChamada };
