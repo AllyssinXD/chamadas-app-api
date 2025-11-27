@@ -7,7 +7,8 @@ import chamadaCustomInputModel from "../models/chamadaCustomInputModel.js";
 
 const confirmPresence = async (req, res) => {
   const { nome, lag, long } = req.body;
-  const ip = req.headers["x-forwarded-for"] || req.body.ip;
+  const forwarded = req.headers["x-forwarded-for"];
+  const ip = forwarded ? forwarded.split(",")[0].trim() : req.body.ip;
   const { chamadaId } = req.params;
   const { customInputs } = req.body;
 
