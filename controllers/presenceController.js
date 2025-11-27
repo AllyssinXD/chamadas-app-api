@@ -145,11 +145,24 @@ const confirmPresence = async (req, res) => {
       });
     }
 
-    if (ipInfo.data.city !== locationInfo.cidade) {
-      console.log("Erro: Informações do IP não correspondem à localização.");
+    console.log("Calculando distância entre GeoIP e GPS enviado...");
+
+    const ipLat = ipInfo.data.lat;
+    const ipLon = ipInfo.data.lon;
+
+    const gpsLat = lag;
+    const gpsLon = long;
+
+    // Distância entre localização do IP e GPS real do usuário
+    const distanceIpToGps = calculateDistance(ipLat, ipLon, gpsLat, gpsLon);
+    console.log("Distância entre IP e GPS:", distanceIpToGps, "metros");
+
+    const maxAllowedIpDistance = 5000; // 5 km (ajustável)
+
+    if (distanceIpToGps > maxAllowedIpDistance) {
       return res.status(400).json({
         success: false,
-        message: "Informações do IP não correspondem",
+        message: `Localização do IP incompatível com o GPS do dispositivo. Distância: ${distanceIpToGps.toFixed(2)} metros`,
       });
     }
 
