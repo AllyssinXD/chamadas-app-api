@@ -10,34 +10,65 @@ const exportChamada = async (req, res) => {
   const { chamadaId } = req.params;
 
   try {
-    // Buscar dados do banco
+    // 1. Buscar presenças e inputs personalizados
     const presences = await presenceModel.find({ id_chamada: chamadaId });
+    const customInputs = await chamadaCustomInputModel.find({ id_chamada: chamadaId });
 
-    // Criar workbook e worksheet
+    // 2. Buscar todos os valores de inputs
+    const allValues = await chamadaInputValueModel.find({
+      presence_id: { $in: presences.map(p => p._id) }
+    });
+
+    // Organizar values por presenceId
+    const valuesByPresence = {};
+    allValues.forEach(v => {
+      if (!valuesByPresence[v.presence_id]) valuesByPresence[v.presence_id] = {};
+      valuesByPresence[v.presence_id][v.id_input] = v.value;
+    });
+
+    // 3. Criar workbook
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Presenças");
 
-    // Cabeçalho
-    worksheet.columns = [
-      { header: "Nome", key: "nome", width: 30 },
-      { header: "Latitude", key: "lag", width: 15 },
-      { header: "Longitude", key: "long", width: 15 },
-      { header: "IP", key: "ip", width: 20 },
-      { header: "Data de Envio", key: "envio", width: 25 },
+    // 4. Criar colunas fixas
+    const columns = [
+      { header: "Nome", key: "nome", width: 25 },
+      { header: "Latitude", key: "lag", width: 12 },
+      { header: "Longitude", key: "long", width: 12 },
+      { header: "IP", key: "ip", width: 18 },
+      { header: "Data de Envio", key: "envio", width: 22 },
     ];
 
-    // Adicionar linhas
-    presences.forEach((p) => {
-      worksheet.addRow({
+    // 5. Criar colunas dinâmicas dos inputs personalizados
+    customInputs.forEach(input => {
+      columns.push({
+        header: capitalizeFirstLetter(input.label),
+        key: input._id.toString(), // id único do input vira coluna
+        width: 20,
+      });
+    });
+
+    worksheet.columns = columns;
+
+    // 6. Preencher linhas
+    presences.forEach(p => {
+      const row = {
         nome: p.nome,
         lag: p.lag,
         long: p.long,
         ip: p.ip,
-        envio: p.envio.toISOString(), // converter para string legível
+        envio: new Date(p.envio).toLocaleString("pt-BR"),
+      };
+
+      // preencher inputs personalizados
+      customInputs.forEach(input => {
+        row[input._id] = valuesByPresence[p._id]?.[input._id] || "";  
       });
+
+      worksheet.addRow(row);
     });
 
-    // Configurar resposta para download
+    // 7. Enviar arquivo dividido corretamente
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -47,14 +78,19 @@ const exportChamada = async (req, res) => {
       `attachment; filename=presencas-${chamadaId}.xlsx`
     );
 
-    // Escrever e enviar o arquivo
     await workbook.xlsx.write(res);
     res.status(200).end();
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: "Erro ao gerar Excel" });
+    console.error("Erro ao gerar Excel:", err);
+    res.status(500).json({
+      success: false,
+      message: "Erro ao gerar Excel",
+      error: err.message,
+    });
   }
-}
+};
+
 
 const confirmPresence = async (req, res) => {
   const { nome, lag, long } = req.body;
@@ -309,5 +345,9 @@ const getAllPresencesFromChamada = async (req, res) => {
     });
   }
 };
+
+function capitalizeFirstLetter(val) {
+    return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
 
 export { confirmPresence, getAllPresencesFromChamada, exportChamada };
