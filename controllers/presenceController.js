@@ -1,3 +1,10 @@
+import presenceModel from "../models/presenceModel.js";
+import chamadaModel from "../models/chamadaModel.js";
+import axios from "axios"
+import mongoose from "mongoose";
+import chamadaInputValueModel from "../models/chamadaInputValueModel.js";
+import chamadaCustomInputModel from "../models/chamadaCustomInputModel.js";
+
 const confirmPresence = async (req, res) => {
   const { nome, lag, long } = req.body;
   const ip = req.headers["x-forwarded-for"] || req.body.ip;
@@ -139,3 +146,5 @@ const confirmPresence = async (req, res) => {
     });
   }
 };
+
+export { confirmPresence, getAllPresencesFromChamada };
