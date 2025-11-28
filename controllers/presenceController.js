@@ -200,7 +200,7 @@ const confirmPresence = async (req, res) => {
       console.log("Erro: Dispositivo já foi usado para responder a chamada.");
       return res.status(400).json({
         success: false,
-        message: `Esse Dispositivo já foi usado para responder a chamada.`,
+        message: `Esse dispositivo já foi usado para responder a chamada.`,
       });
     }
 
