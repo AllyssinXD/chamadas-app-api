@@ -206,7 +206,7 @@ const confirmPresence = async (req, res) => {
     }
 
     console.log("Verificando se o IP já foi usado...");
-    const exists = await presenceModel.find({ id_chamada: chamadaId, ip, uuid });
+    const exists = await presenceModel.find({ id_chamada: chamadaId, $and: { ip, uuid } });
     console.log("Presenças existentes para este IP:", exists);
 
     if (exists.length > 0) {
