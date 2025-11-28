@@ -102,7 +102,7 @@ const confirmPresence = async (req, res) => {
   const { customInputs } = req.body;
 
   console.log("Iniciando confirmação de presença...");
-  console.log("Dados recebidos:", { nome, lag, long, ip, chamadaId, customInputs });
+  console.log("Dados recebidos:", req.body);
 
   if (!nome || !lag || !long || !ip || !chamadaId || !uuid) {
     console.log("Erro: Campos obrigatórios estão vazios.");
@@ -194,10 +194,10 @@ const confirmPresence = async (req, res) => {
     }
 
     console.log("Verificando se o UUID já foi usado...");
-    const exists = await presenceModel.find({ id_chamada: chamadaId, uuid });
+    const exists = await presenceModel.findOne({ id_chamada: chamadaId, uuid });
     console.log("Presenças existentes para este UUID:", exists);
 
-    if (exists.length > 0) {
+    if (exists) {
       console.log("Erro: Dispositivo já foi usado para responder a chamada.");
       return res.status(400).json({
         success: false,
