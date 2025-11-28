@@ -146,24 +146,12 @@ const confirmPresence = async (req, res) => {
       });
     }
 
-    console.log("Calculando distância entre GeoIP e GPS enviado...");
-
-    const ipLat = ipInfo.data.lat;
-    const ipLon = ipInfo.data.lon;
-
-    const gpsLat = lag;
-    const gpsLon = long;
-
-    // Distância entre localização do IP e GPS real do usuário
-    const distanceIpToGps = calculateDistance(ipLat, ipLon, gpsLat, gpsLon);
-    console.log("Distância entre IP e GPS:", distanceIpToGps, "metros");
-
-    const maxAllowedIpDistance = 5000; // 5 km (ajustável)
-
-    if (distanceIpToGps > maxAllowedIpDistance) {
+    console.log("Comparando Estado");
+    if(locationInfo.estado != ipInfo.data.region)  {
+      console.log("Erro: Localização de IP em outro estado do pais.");
       return res.status(400).json({
         success: false,
-        message: `Localização do IP incompatível com o GPS do dispositivo. Distância: ${distanceIpToGps.toFixed(2)} metros`,
+        message: `Localização de IP em outro estado do pais. Tente conectar em um roteador local ou desligue sua VPN.`,
       });
     }
 
@@ -205,15 +193,15 @@ const confirmPresence = async (req, res) => {
       });
     }
 
-    console.log("Verificando se o IP já foi usado...");
-    const exists = await presenceModel.find({ id_chamada: chamadaId, $and: { ip, uuid } });
-    console.log("Presenças existentes para este IP:", exists);
+    console.log("Verificando se o UUID já foi usado...");
+    const exists = await presenceModel.find({ id_chamada: chamadaId, uuid });
+    console.log("Presenças existentes para este UUID:", exists);
 
     if (exists.length > 0) {
-      console.log("Erro: IP já foi usado para responder a chamada.");
+      console.log("Erro: Dispositivo já foi usado para responder a chamada.");
       return res.status(400).json({
         success: false,
-        message: `Esse IP já foi usado para responder a chamada.`,
+        message: `Esse Dispositivo já foi usado para responder a chamada.`,
       });
     }
 
@@ -342,6 +330,7 @@ async function getAddress(lat, lon) {
     });
 
     const data = response.data;
+    console.log(data)
 
     if (data.status !== "OK" || !data.results.length) {
       return { error: "Localização inválida" };
@@ -354,7 +343,7 @@ async function getAddress(lat, lon) {
     result.address_components.forEach((component) => {
       console.log(component)
       if (component.types.includes("administrative_area_level_2")) cidade = component.long_name;
-      if (component.types.includes("administrative_area_level_1")) estado = component.long_name;
+      if (component.types.includes("administrative_area_level_1")) estado = component.short_name;
       if (component.types.includes("country")) pais = component.long_name;
     });
 
