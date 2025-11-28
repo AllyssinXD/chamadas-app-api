@@ -94,8 +94,7 @@ const exportChamada = async (req, res) => {
 
 
 const confirmPresence = async (req, res) => {
-  const { nome, lag, long } = req.body;
-  const uuid = req.headers["user-agent"];
+  const { nome, lag, long, uuid } = req.body;
   const forwarded = req.headers["x-forwarded-for"];
   const ip = forwarded ? forwarded.split(",")[0].trim() : req.body.ip;
   const { chamadaId } = req.params;
