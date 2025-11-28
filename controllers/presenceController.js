@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import chamadaInputValueModel from "../models/chamadaInputValueModel.js";
 import chamadaCustomInputModel from "../models/chamadaCustomInputModel.js";
 import ExcelJS from "exceljs"
+import {v4} from "uuid"
 
 const exportChamada = async (req, res) => {
   const { chamadaId } = req.params;
@@ -250,6 +251,67 @@ const confirmPresence = async (req, res) => {
   }
 };
 
+const clearPresences = async (req, res) =>{
+    const {chamadaId} = req.params
+
+    try{
+      const customInputs = await chamadaCustomInputModel.find({id_chamada: chamadaId})
+
+      await presenceModel.deleteMany({
+        id_chamada: chamadaId,
+      });
+
+      customInputs.forEach(async (input)=>{
+        await chamadaInputValueModel.deleteMany({id_input: input._id})
+      })
+
+      res.status(201).json({ success: true });
+    } catch (err) {
+      console.log("Erro ao limpar presenças:", err);
+      res.status(500).json({
+        success: false,
+        message: "Erro ao limpar presenças",
+        error: err.message,
+      });
+    }
+}
+
+const forcePresence = async (req, res) =>{
+    const {nome, customInputs} = req.body;
+    const {chamadaId} = req.params
+
+    try{
+      const chamada = await chamadaModel.findById(chamadaId)
+
+      const newPresence = await presenceModel.create({
+        nome,
+        long: chamada.long,
+        lag: chamada.lag,
+        envio: dataAgora,
+        ip: "FORCED",
+        uuid: v4(),
+        id_chamada: chamadaId,
+      });
+
+      for (const key of Object.keys(customInputs)) {
+        const inputValue = await chamadaInputValueModel.create({
+          id_input: key,
+          value: customInputs[key],
+          presence_id: newPresence._id,
+        });
+        console.log("Input personalizado salvo:", inputValue);
+      }
+      res.status(201).json({ success: true });
+    } catch (err) {
+      console.log("Erro ao confirmar presença:", err);
+      res.status(500).json({
+        success: false,
+        message: "Erro ao confirmar chamada",
+        error: err.message,
+      });
+    }
+}
+
 // Função para calcular a distância entre duas coordenadas (em metros)
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3; // Raio da Terra em metros
@@ -363,4 +425,4 @@ function capitalizeFirstLetter(val) {
     return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
 
-export { confirmPresence, getAllPresencesFromChamada, exportChamada };
+export { confirmPresence, forcePresence, getAllPresencesFromChamada, exportChamada, clearPresences };
