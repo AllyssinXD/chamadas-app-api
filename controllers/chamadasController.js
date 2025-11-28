@@ -26,6 +26,7 @@ const createChamada = async (req, res) => {
         id_chamada: novaChamada._id,
         label: input.label,
         placeholder: input.placeholder,
+        meta: input.meta,
         type: input.type
       })
     })
@@ -135,6 +136,7 @@ const updateChamada = async (req, res) => {
             label: input.label,
             placeholder: input.placeholder,
             type: input.type,
+            meta: input.meta
           });
         } else {
           // Criar novo input personalizado
@@ -143,6 +145,7 @@ const updateChamada = async (req, res) => {
             label: input.label,
             placeholder: input.placeholder,
             type: input.type,
+            meta: input.meta
           });
         }
       }
